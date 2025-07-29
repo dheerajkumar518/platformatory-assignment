@@ -1,30 +1,33 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/database.types";
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+import { Connection, Client } from "@temporalio/client";
+import { Tables } from "@/database.types";
 
 export async function POST(request: Request) {
   try {
-    const inputData =
-      (await request.json()) as Database["public"]["Tables"]["profiles"]["Insert"];
+    const body = await request.text();
+    const profileData = JSON.parse(body) as Tables<"profiles">;
 
-    console.log({ ...inputData });
-    const { data: result, error } = await supabase
-      .from("profiles")
-      .upsert([{ ...inputData }]); // upsert expects an array of objects
+    const connection = await Connection.connect();
+    const client = new Client({ connection });
 
-    console.log(result, error);
-    if (error) {
-      throw error;
-    }
+    await client.workflow.start("saveProfileWorkflow", {
+      args: [profileData],
+      taskQueue: "profile-task",
+      workflowId: `profile-${profileData.id}-${Date.now()}`,
+    });
 
-    return NextResponse.json({ ok: true });
+    return new Response(JSON.stringify({ status: "Workflow started" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: (error as Error).message || "Internal Server Error" },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({
+        error: (error as Error).message || "Internal Server Error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 }

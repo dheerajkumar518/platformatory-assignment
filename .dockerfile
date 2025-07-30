@@ -25,11 +25,3 @@ FROM base AS worker
 COPY . .
 
 CMD ["npx", "ts-node", "temporal/worker.ts"]
-
-FROM base AS staging
-
-RUN npm run build
-
-COPY .next .
-
-CMD ["npm", "run", "start"]

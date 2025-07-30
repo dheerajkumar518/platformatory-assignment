@@ -61,7 +61,6 @@ services:
       context: .
       dockerfile: .dockerfile
       target: dev
-    # command: npm run dev
     env_file: .env
     ports:
       - "3000:3000"
@@ -75,15 +74,8 @@ services:
     env_file: .env
     networks:
       - temporal-network
-  # develop:
-  #   watch:
-  #     - action: sync
-  #       path: .
-  #       target: /usr/src/app
-  #       ignore:
-  #         - node_module/
-  #     - action: rebuild
-  #       path: package.json
+    depends_on:
+      - temporal
 networks:
   temporal-network:
     driver: bridge

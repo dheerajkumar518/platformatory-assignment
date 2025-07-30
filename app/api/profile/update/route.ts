@@ -6,7 +6,13 @@ export async function POST(request: Request) {
     const body = await request.text();
     const profileData = JSON.parse(body) as Tables<"profiles">;
 
-    const connection = await Connection.connect();
+    const temporalAddress =
+      process.env.TEMPORAL_ADDRESS || "localhost:7233"; // Fallback for local dev
+    console.log(`Connecting to Temporal at: ${temporalAddress}`);
+
+    const connection = await Connection.connect({
+      address: temporalAddress,
+    });
     const client = new Client({ connection });
 
     await client.workflow.start("saveProfileWorkflow", {
